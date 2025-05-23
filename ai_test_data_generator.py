@@ -42,6 +42,61 @@ class AiTestDataGenerator:
         else:
             raise ValueError(f"Unsupported AI provider: {provider}. Use 'openai' or 'anthropic'")
     
+    def _generate_from_ai(self, prompt):
+        """Generate test data using the selected AI model."""
+        if self.provider == "openai":
+            return self._generate_from_openai(prompt)
+        elif self.provider == "anthropic":
+            return self._generate_from_anthropic(prompt)
+        else:
+            raise ValueError(f"Unsupported AI provider: {self.provider}")
+    
+    def _generate_from_openai(self, prompt):
+        """Generate test data using OpenAI."""
+        if not self.api_key:
+            # Fail the test case instead of generating mock data
+            raise ValueError("No OpenAI API key provided. Cannot generate test data.")
+        
+        try:
+            response = self.client.chat.completions.create(
+                model="gpt-4",  # or another model as needed
+                messages=[
+                    {"role": "system", "content": "You are a helpful API test data generator that creates realistic test data based on OpenAPI schemas."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.7,
+                max_tokens=2000
+            )
+            return response.choices[0].message.content
+        except Exception as e:
+            logging.error(f"OpenAI API error: {str(e)}")
+            # Propagate the error instead of returning empty JSON
+            raise RuntimeError(f"OpenAI API error: {str(e)}")
+    
+    def _generate_from_anthropic(self, prompt):
+        """Generate test data using Anthropic."""
+        if not self.api_key:
+            # Fail the test case instead of generating mock data
+            raise ValueError("No Anthropic API key provided. Cannot generate test data.")
+        
+        try:
+            response = self.client.messages.create(
+                model="claude-3-haiku-20240307",  # Use a model that should exist
+                max_tokens=2000,
+                temperature=0.7,
+                system="You are a helpful API test data generator that creates realistic test data based on OpenAPI schemas. You must only return valid JSON without any explanation.",
+                messages=[
+                    {"role": "user", "content": prompt}
+                ]
+            )
+            response_text = response.content[0].text
+            logging.debug(f"Raw Anthropic response: {response_text}")
+            return response_text
+        except Exception as e:
+            logging.error(f"Anthropic API error: {str(e)}")
+            # Propagate the error instead of returning empty JSON
+            raise RuntimeError(f"Anthropic API error: {str(e)}")
+    
     def generate_test_data_for_endpoint(self, endpoint_path, method):
         """
         Generate test data for a specific endpoint using AI.
@@ -52,6 +107,10 @@ class AiTestDataGenerator:
             
         Returns:
             A dictionary with request and response data
+            
+        Raises:
+            ValueError: If endpoint is not found or API key is missing
+            RuntimeError: If AI provider returns an error
         """
         endpoints = self.api_parser.get_endpoints()
         
@@ -68,7 +127,7 @@ class AiTestDataGenerator:
         # Create a prompt for the AI model with the endpoint details
         prompt = self._create_prompt(endpoint_data)
         
-        # Generate test data using the AI model
+        # Generate test data using the AI model - will raise errors if API key is missing or AI fails
         ai_response = self._generate_from_ai(prompt)
         
         try:
@@ -103,21 +162,8 @@ class AiTestDataGenerator:
                     parsed_data['response'] = {}
                 return parsed_data
             except json.JSONDecodeError:
-                logging.error("Still couldn't parse AI response after cleaning. Using mock data.")
-                # Fall back to mock data instead of empty structure
-                return {
-                    'request': {
-                        'name': 'Test User',
-                        'email': 'test@example.com',
-                        'username': 'testuser'
-                    },
-                    'response': {
-                        'id': 11,
-                        'name': 'Test User',
-                        'email': 'test@example.com',
-                        'username': 'testuser'
-                    }
-                }
+                # Fail the test case instead of using mock data
+                raise RuntimeError("Failed to parse AI response as JSON, even after cleaning.")
     
     def _create_prompt(self, endpoint_data):
         """Create a prompt for the AI model based on the endpoint data."""
@@ -163,89 +209,6 @@ Format:
 }}
 """
         return prompt
-    
-    def _generate_from_ai(self, prompt):
-        """Generate test data using the selected AI model."""
-        if self.provider == "openai":
-            return self._generate_from_openai(prompt)
-        elif self.provider == "anthropic":
-            return self._generate_from_anthropic(prompt)
-        else:
-            raise ValueError(f"Unsupported AI provider: {self.provider}")
-    
-    def _generate_from_openai(self, prompt):
-        """Generate test data using OpenAI."""
-        if not self.api_key:
-            # For testing purposes, generate mock data
-            logging.warning("No OpenAI API key, generating mock data")
-            return """
-            {
-              "request": {
-                "name": "Test User",
-                "email": "test@example.com",
-                "username": "testuser"
-              },
-              "response": {
-                "id": 11,
-                "name": "Test User",
-                "email": "test@example.com",
-                "username": "testuser"
-              }
-            }
-            """
-        
-        try:
-            response = self.client.chat.completions.create(
-                model="gpt-4",  # or another model as needed
-                messages=[
-                    {"role": "system", "content": "You are a helpful API test data generator that creates realistic test data based on OpenAPI schemas."},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.7,
-                max_tokens=2000
-            )
-            return response.choices[0].message.content
-        except Exception as e:
-            logging.error(f"OpenAI API error: {str(e)}")
-            return "{}"
-    
-    def _generate_from_anthropic(self, prompt):
-        """Generate test data using Anthropic."""
-        if not self.api_key:
-            # For testing purposes, generate mock data
-            logging.warning("No Anthropic API key, generating mock data")
-            return """
-            {
-              "request": {
-                "name": "Claude User",
-                "email": "claude@example.com",
-                "username": "claudeuser"
-              },
-              "response": {
-                "id": 12,
-                "name": "Claude User",
-                "email": "claude@example.com",
-                "username": "claudeuser"
-              }
-            }
-            """
-        
-        try:
-            response = self.client.messages.create(
-                model="claude-3-haiku-20240307",  # Use a model that should exist
-                max_tokens=2000,
-                temperature=0.7,
-                system="You are a helpful API test data generator that creates realistic test data based on OpenAPI schemas. You must only return valid JSON without any explanation.",
-                messages=[
-                    {"role": "user", "content": prompt}
-                ]
-            )
-            response_text = response.content[0].text
-            logging.debug(f"Raw Anthropic response: {response_text}")
-            return response_text
-        except Exception as e:
-            logging.error(f"Anthropic API error: {str(e)}")
-            return "{}"
     
     def save_test_data_to_file(self, test_data, file_path):
         """Save generated test data to a JSON file."""
