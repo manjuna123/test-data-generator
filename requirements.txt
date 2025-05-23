@@ -1,0 +1,5 @@
+# Requirements for API Test Data Generator
+robotframework
+openapi-spec-validator
+requests
+pyyaml

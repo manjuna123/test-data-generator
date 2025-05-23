@@ -1,0 +1,21 @@
+{
+  "name": "API Test Data Generator Dev Container",
+  "image": "mcr.microsoft.com/devcontainers/python:3.11",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    "ghcr.io/devcontainers/features/robot-framework:1": {}
+  },
+  "postCreateCommand": "pip install -r requirements.txt || true",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python3"
+      },
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "robocorp.robotframework-lsp"
+      ]
+    }
+  }
+}
