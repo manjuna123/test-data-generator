@@ -109,25 +109,27 @@ class ApiTestingLibrary:
     
     @keyword
     def response_should_contain_property(self, property_path):
-        """Verify that the response contains the specified property."""
+        """Verify that the response contains the specified property, supporting list indices."""
         if not self.last_response:
             raise ValueError("No request has been made yet")
-        
         try:
             response_json = self.last_response.json()
         except:
             raise ValueError("Response is not valid JSON")
-        
-        # Navigate through nested properties using dot notation
+        # Navigate through nested properties using dot notation, supporting list indices
         properties = property_path.split('.')
         current = response_json
-        
         for prop in properties:
-            if isinstance(current, dict) and prop in current:
+            if isinstance(current, list):
+                try:
+                    idx = int(prop)
+                    current = current[idx]
+                except (ValueError, IndexError):
+                    raise AssertionError(f"List index '{prop}' not found in response at this level")
+            elif isinstance(current, dict) and prop in current:
                 current = current[prop]
             else:
                 raise AssertionError(f"Property '{property_path}' not found in response")
-        
         return f"Property '{property_path}' found in response"
     
     @keyword
