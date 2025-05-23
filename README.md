@@ -20,8 +20,8 @@ python run_tests.py --spec your_api_spec.yaml --url https://your-api-url.com
 ## Components
 
 - **api_spec_parser.py**: Parses OpenAPI specifications
-- **test_data_generator.py**: Generates test data based on API schemas
-- **api_testing_library.py**: Robot Framework library for API testing
+- **ai_test_data_generator.py**: Generates test data based on API schemas using AI
+- **ApiTestingLibrary.py**: Robot Framework library for API testing
 - **example_test.robot**: Example Robot Framework test suite
 
 ## Creating Custom Tests

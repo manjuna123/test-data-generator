@@ -4,7 +4,6 @@ import os
 from robot.api.deco import keyword
 from robot.api import logger
 from api_spec_parser import ApiSpecParser
-from test_data_generator import TestDataGenerator
 from ai_test_data_generator import AiTestDataGenerator
 
 class ApiTestingLibrary:
@@ -16,14 +15,12 @@ class ApiTestingLibrary:
         self.last_response = None
         self.test_data = {}
         self.api_parser = None
-        self.data_generator = None
         self.ai_generator = None
     
     @keyword
     def load_api_specification(self, spec_file_path):
         """Load and parse the OpenAPI specification file."""
         self.api_parser = ApiSpecParser(spec_file_path)
-        self.data_generator = TestDataGenerator(self.api_parser)
         self.ai_generator = AiTestDataGenerator(self.api_parser)
         return f"API specification loaded from {spec_file_path}"
     
@@ -32,21 +29,6 @@ class ApiTestingLibrary:
         """Set the base URL for API requests."""
         self.base_url = base_url
         return f"Base URL set to {base_url}"
-    
-    @keyword
-    def generate_test_data_for_endpoint(self, endpoint_path, method, save_to_file=None):
-        """Generate test data for a specific endpoint and optionally save to file."""
-        if not self.data_generator:
-            raise ValueError("API specification must be loaded first using 'Load API Specification' keyword")
-        
-        test_data = self.data_generator.generate_test_data_for_endpoint(endpoint_path, method)
-        self.test_data = test_data
-        
-        if save_to_file:
-            self.data_generator.save_test_data_to_file(test_data, save_to_file)
-            logger.info(f"Test data saved to {save_to_file}")
-        
-        return json.dumps(test_data, indent=2)
     
     @keyword
     def load_test_data_from_file(self, file_path):
