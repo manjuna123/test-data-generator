@@ -4,6 +4,7 @@ import os
 from robot.api.deco import keyword
 from robot.api import logger
 from api_spec_parser import ApiSpecParser
+from test_data_generator import TestDataGenerator
 from ai_test_data_generator import AiTestDataGenerator
 
 class ApiTestingLibrary:
@@ -15,13 +16,15 @@ class ApiTestingLibrary:
         self.last_response = None
         self.test_data = {}
         self.api_parser = None
+        self.data_generator = None
         self.ai_generator = None
     
     @keyword
     def load_api_specification(self, spec_file_path):
         """Load and parse the OpenAPI specification file."""
         self.api_parser = ApiSpecParser(spec_file_path)
-        self.ai_generator = AiTestDataGenerator(self.api_parser)
+        self.data_generator = TestDataGenerator(self.api_parser)
+        # AI generator will be initialized later when needed
         return f"API specification loaded from {spec_file_path}"
     
     @keyword
