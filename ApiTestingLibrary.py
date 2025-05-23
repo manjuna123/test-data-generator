@@ -185,6 +185,9 @@ class ApiTestingLibrary:
         test_data = self.ai_generator.generate_test_data_for_endpoint(endpoint_path, method)
         self.test_data = test_data
         
+        # Log the full test data to help with debugging
+        logger.info(f"Generated test data:\n{json.dumps(test_data, indent=2)}")
+        
         if save_to_file:
             self.ai_generator.save_test_data_to_file(test_data, save_to_file)
             logger.info(f"AI-generated test data saved to {save_to_file}")

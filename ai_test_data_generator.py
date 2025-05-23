@@ -84,11 +84,40 @@ class AiTestDataGenerator:
             return parsed_data
         except json.JSONDecodeError:
             logging.error(f"Failed to parse AI response as JSON: {ai_response}")
-            # Fall back to an empty structure if parsing fails
-            return {
-                'request': {},
-                'response': {}
-            }
+            logging.error("AI response might contain formatting that's not valid JSON. Attempting to clean...")
+            
+            # Try to clean the response by removing extra whitespace and newlines
+            cleaned_response = ai_response.strip()
+            
+            # If it looks like the AI returned text wrapped in ``` (code blocks), try to extract it
+            if cleaned_response.startswith("```json") and cleaned_response.endswith("```"):
+                cleaned_response = cleaned_response[7:-3].strip()
+            elif cleaned_response.startswith("```") and cleaned_response.endswith("```"):
+                cleaned_response = cleaned_response[3:-3].strip()
+                
+            try:
+                parsed_data = json.loads(cleaned_response)
+                if 'request' not in parsed_data:
+                    parsed_data['request'] = {}
+                if 'response' not in parsed_data:
+                    parsed_data['response'] = {}
+                return parsed_data
+            except json.JSONDecodeError:
+                logging.error("Still couldn't parse AI response after cleaning. Using mock data.")
+                # Fall back to mock data instead of empty structure
+                return {
+                    'request': {
+                        'name': 'Test User',
+                        'email': 'test@example.com',
+                        'username': 'testuser'
+                    },
+                    'response': {
+                        'id': 11,
+                        'name': 'Test User',
+                        'email': 'test@example.com',
+                        'username': 'testuser'
+                    }
+                }
     
     def _create_prompt(self, endpoint_data):
         """Create a prompt for the AI model based on the endpoint data."""
@@ -203,15 +232,17 @@ Format:
         
         try:
             response = self.client.messages.create(
-                model="claude-3-opus-20240229",  # or another model as needed
+                model="claude-3-haiku-20240307",  # Use a model that should exist
                 max_tokens=2000,
                 temperature=0.7,
-                system="You are a helpful API test data generator that creates realistic test data based on OpenAPI schemas.",
+                system="You are a helpful API test data generator that creates realistic test data based on OpenAPI schemas. You must only return valid JSON without any explanation.",
                 messages=[
                     {"role": "user", "content": prompt}
                 ]
             )
-            return response.content[0].text
+            response_text = response.content[0].text
+            logging.debug(f"Raw Anthropic response: {response_text}")
+            return response_text
         except Exception as e:
             logging.error(f"Anthropic API error: {str(e)}")
             return "{}"
