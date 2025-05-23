@@ -1,0 +1,32 @@
+@keyword
+def generate_ai_test_data_for_endpoint(self, endpoint_path, method, ai_provider="openai", save_to_file=None):
+    """Generate test data for a specific endpoint using AI and optionally save to file.
+    
+    Args:
+        endpoint_path: The path of the endpoint (e.g., /users)
+        method: The HTTP method (e.g., GET, POST)
+        ai_provider: The AI provider to use ("openai" or "anthropic")
+        save_to_file: Optional path to save the generated test data
+        
+    Returns:
+        The generated test data in JSON format
+    """
+    if not self.ai_generator:
+        # Create a new AI generator with the specified provider
+        if not self.api_parser:
+            raise ValueError("API specification must be loaded first using 'Load API Specification' keyword")
+        self.ai_generator = AiTestDataGenerator(self.api_parser, provider=ai_provider)
+    elif self.ai_generator.provider != ai_provider.lower():
+        # If provider changed, create a new generator
+        self.ai_generator = AiTestDataGenerator(self.api_parser, provider=ai_provider)
+    
+    # Generate test data using AI
+    logger.info(f"Generating AI test data for {method.upper()} {endpoint_path} using {ai_provider}")
+    test_data = self.ai_generator.generate_test_data_for_endpoint(endpoint_path, method)
+    self.test_data = test_data
+    
+    if save_to_file:
+        self.ai_generator.save_test_data_to_file(test_data, save_to_file)
+        logger.info(f"AI-generated test data saved to {save_to_file}")
+    
+    return json.dumps(test_data, indent=2)

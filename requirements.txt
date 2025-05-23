@@ -3,3 +3,6 @@ robotframework
 openapi-spec-validator
 requests
 pyyaml
+faker
+openai
+anthropic
