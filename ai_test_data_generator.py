@@ -8,6 +8,10 @@ import json
 import logging
 from openai import OpenAI
 from anthropic import Anthropic
+from dotenv import load_dotenv
+
+# Load environment variables from .env file if it exists
+load_dotenv()
 
 class AiTestDataGenerator:
     """Generate test data using AI models based on OpenAPI specifications."""

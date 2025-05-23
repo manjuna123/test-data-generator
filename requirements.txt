@@ -6,3 +6,4 @@ pyyaml
 faker
 openai
 anthropic
+python-dotenv
